@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DDCEA01B-F711-4C36-BD2D-449196B748B7}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Poker</RootNamespace>
+    <AssemblyName>Poker</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseIISExpress>false</UseIISExpress>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Web.DynamicData" />
+    <Reference Include="System.Web.Entity" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.EnterpriseServices" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="img\c01.gif" />
+    <Content Include="img\c02.gif" />
+    <Content Include="img\c03.gif" />
+    <Content Include="img\c04.gif" />
+    <Content Include="img\c05.gif" />
+    <Content Include="img\c06.gif" />
+    <Content Include="img\c07.gif" />
+    <Content Include="img\c08.gif" />
+    <Content Include="img\c09.gif" />
+    <Content Include="img\c10.gif" />
+    <Content Include="img\c11.gif" />
+    <Content Include="img\c12.gif" />
+    <Content Include="img\c13.gif" />
+    <Content Include="img\d01.gif" />
+    <Content Include="img\d02.gif" />
+    <Content Include="img\d03.gif" />
+    <Content Include="img\d04.gif" />
+    <Content Include="img\d05.gif" />
+    <Content Include="img\d06.gif" />
+    <Content Include="img\d07.gif" />
+    <Content Include="img\d08.gif" />
+    <Content Include="img\d09.gif" />
+    <Content Include="img\d10.gif" />
+    <Content Include="img\d11.gif" />
+    <Content Include="img\d12.gif" />
+    <Content Include="img\d13.gif" />
+    <Content Include="img\h01.gif" />
+    <Content Include="img\h02.gif" />
+    <Content Include="img\h03.gif" />
+    <Content Include="img\h04.gif" />
+    <Content Include="img\h05.gif" />
+    <Content Include="img\h06.gif" />
+    <Content Include="img\h07.gif" />
+    <Content Include="img\h08.gif" />
+    <Content Include="img\h09.gif" />
+    <Content Include="img\h10.gif" />
+    <Content Include="img\h11.gif" />
+    <Content Include="img\h12.gif" />
+    <Content Include="img\h13.gif" />
+    <Content Include="img\jo-2.gif" />
+    <Content Include="img\jo.gif" />
+    <Content Include="img\s01.gif" />
+    <Content Include="img\s02.gif" />
+    <Content Include="img\s03.gif" />
+    <Content Include="img\s04.gif" />
+    <Content Include="img\s05.gif" />
+    <Content Include="img\s06.gif" />
+    <Content Include="img\s07.gif" />
+    <Content Include="img\s08.gif" />
+    <Content Include="img\s09.gif" />
+    <Content Include="img\s10.gif" />
+    <Content Include="img\s11.gif" />
+    <Content Include="img\s12.gif" />
+    <Content Include="img\s13.gif" />
+    <Content Include="img\z01.gif" />
+    <Content Include="img\z02.gif" />
+    <Content Include="JS\Card.js" />
+    <Content Include="JS\CardDeck.js" />
+    <Content Include="JS\Com.js" />
+    <Content Include="JS\jquery-1.8.1.js" />
+    <Content Include="JS\Player.js" />
+    <Content Include="JS\CardArrUtil.js" />
+    <Content Include="JS\PokerHand.js" />
+    <Content Include="JS\Disp_Alone.js" />
+    <Content Include="JS\Disp_Versus.js" />
+    <Content Include="JS\GV_Alone.js" />
+    <Content Include="JS\GV_Versus.js" />
+    <Content Include="Web.config" />
+    <Content Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
+    <Content Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </Content>
+    <Content Include="Poker_Alone.htm" />
+    <Content Include="Poker_Versus.htm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="sound\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>False</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>57941</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>
+          </IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

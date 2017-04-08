@@ -1,0 +1,389 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Script-Type" content="text/javascript"/>
+<meta http-equiv="Content-type" content="text/html; charset=UTF-8"/>
+<title>ポーカー</title>
+<script type="text/javascript" src="./JS/jquery-1.8.1.js"></script>
+<script type="text/javascript" src="./JS/Com.js"></script>
+<script type="text/javascript" src="./JS/GV_Alone.js"></script>
+<script type="text/javascript" src="./JS/Card.js"></script>
+<script type="text/javascript" src="./JS/CardArrUtil.js"></script>
+<script type="text/javascript" src="./JS/CardDeck.js"></script>
+<script type="text/javascript" src="./JS/Disp_Alone.js"></script>
+<script type="text/javascript" src="./JS/Player.js"></script>
+<script type="text/javascript" src="./JS/PokerHand.js"></script>
+<script type="text/javascript">
+    var g_state;         //state
+    var EN_STATE = { INI: 0, CARD_SELECT: 1, PKHAND_JUDGE: 2, BERSERKER: 3 };
+    var g_player;        //プレイヤー
+    var g_cardDeck;      //カードデッキ
+    var g_isBerserker;   //バーサーカーフラグ
+    var g_timerBsk;      //バーサーカーtimer
+    var g_gradStrTimer;  //グラデーション文字列タイマー
+    var g_arrAnimeTimer; //アニメ用timer配列
+    var g_bgmNum;        //現在のBGM番号
+    var g_seNum;         //現在のSE番号
+    var g_wkBgmNum;      //変更用BGM番号
+    var g_wkSeNum;       //変更用SE番号
+
+    //**********************************
+    //ゲームメイン処理
+    //**********************************
+    function gameMain(arg_btn) {
+        var wkBGM;
+
+        Disp.setDispInfo();         //画面情報取得
+
+        //state移動
+        wkBGM = G_EN_BGM.NONE;
+        switch (arg_btn) {
+            //バーサーカーソウルボタン押下時
+            case "btnBerserker":
+                //state移動(BERSERKER時はCARD_SELECT,それ以外はBERSERKER)
+                g_state = g_isBerserker ? EN_STATE.CARD_SELECT : EN_STATE.BERSERKER;
+                //BGM変更
+                wkBGM = (g_state == EN_STATE.BERSERKER) ? G_EN_BGM.BERSERKER : G_EN_BGM.INI;                
+                g_isBerserker = !g_isBerserker;//バーサーカーフラグ反転                
+                clearTimeout(g_timerBsk);      //timerクリア
+                break;
+        }
+        playBGM(wkBGM);
+
+        //画面処理
+        Disp.showDispByState(g_state, true);  //内部処理前
+
+        //内部処理
+        play(g_state, true);
+
+        //画面処理
+        Disp.showDispByState(g_state, false); //内部処理後
+
+        //state移動
+        // wkBGM = G_EN_BGM.NONE;
+        switch (g_state) {
+            //初期、ポーカーハンドジャッジ後
+            case EN_STATE.INI:
+            case EN_STATE.PKHAND_JUDGE:
+                g_state = EN_STATE.CARD_SELECT;                
+                g_wkBgmNum = G_EN_BGM.INI; //BGM変更
+                break;
+            //交換カード選択時
+            case EN_STATE.CARD_SELECT:
+                g_state = EN_STATE.PKHAND_JUDGE;
+                break;
+        }
+        // playBGM(wkBGM);
+    }
+
+    //**********************************
+    //ゲームプレイ処理 ※ｱﾆﾒｰｼｮﾝ含
+    //arg_state：state
+    //**********************************
+    function play(arg_state) {
+        //アニメーション中断
+        stopAnimate(g_arrAnimeTimer); 
+        clearTimeout(g_gradStrTimer);
+
+        switch (arg_state) {
+            //初期、ポーカーハンドジャッジ後
+            case EN_STATE.INI:
+            case EN_STATE.PKHAND_JUDGE:
+                g_cardDeck = new CardDeck(g_dispInfo.chkUseJoker);    //カードデッキインスタンス生成
+                g_player.clearHand();                                 //手札クリア
+                g_player.cardDeck = g_cardDeck;                       //カードデッキセット
+                playSE(G_EN_SE.SHUFFLE, G_USE_SE);                    //SE:シャッフル
+                g_player.setHand(false);                              //手札セット(裏向き)
+                g_player.sortHand();                                  //手札ソート
+                animate([
+                { anime: function () {
+                    Disp.applyHand(g_player.hand);                    //プレイヤー手札を画面に反映
+                }, interval: G_TOFACE_TIME * 10 },
+
+                { anime: function () {
+                    Disp.toPublicGrad(g_player.hand);                 //プレイヤー手札を表向きに返す
+                }, interval: G_TOFACE_TIME * 10 
+                }], g_arrAnimeTimer);
+                break;
+            //交換カード選択時
+            case EN_STATE.CARD_SELECT:
+                g_player.setDropFlg(g_dispInfo.chkCardArr);           //ドロップフラグを立てる
+                g_player.setFaceByDropFlg(false);                     //ドロップフラグが立っているカードを裏向きにする
+                g_player.dropCardsByDropFlg();                        //ドロップフラグが立っているカードを捨てる
+                Disp.applyHand(g_player.hand);                        //プレイヤー手札を画面に反映
+                g_player.setHand(false);                              //手札セット(裏向き)
+                //※手札交換後のソートはとりあえず不要としておく
+                // g_player.sortHand();                               //手札ソート
+                pkHand = new PokerHand(g_player.hand);                //ポーカーハンド情報生成
+                animate([
+                { anime: function () {
+                    Disp.toPublicGrad(g_player.hand);                 //手札を表向きに返す
+                    Disp.showPKHandStr(pkHand);                       //ポーカーハンドを画面に表示
+                    Disp.showPKHandCnt(pkHand.PKHand);                //ポーカーハンドカウント処理
+                    Disp.showPKHandProb();                            //ポーカーハンド出現率表示
+                    Disp.playSEByPKHand(pkHand);                      //ポーカーハンド別にSEを出す
+                }, interval: G_TOFACE_TIME * 10 
+                }], g_arrAnimeTimer);
+                break;
+            case EN_STATE.BERSERKER:
+                berserker();                                          //バーサーカーソウル発動
+                break;
+        }
+    }
+
+    //**********************************
+    //バーサーカーソウル発動
+    //※手札を捨てる処理、ｱﾆﾒｰｼｮﾝを削除
+    //**********************************
+    function berserker() {
+        g_timerBsk = setTimeout(berserker, 0);               //モンスターカードドロー扱い
+        var cardDeck = new CardDeck(g_dispInfo.chkUseJoker); //カードデッキインスタンス生成
+        g_player.clearHand();                                //手札クリア
+        g_player.cardDeck = cardDeck;                        //カードデッキセット
+        g_player.setHand(true);                              //手札セット
+        //※手札ソート処理は不要としておく
+        // g_player.sortHand();                                //手札ソート
+        Disp.applyHand(g_player.hand);                       //プレイヤー手札を画面に反映
+        pkHand = new PokerHand(g_player.hand);               //ポーカーハンド情報生成
+        Disp.showPKHandStr(pkHand.PKHandStr);                //ポーカーハンドを画面に反映
+        Disp.showPKHandCnt(pkHand.PKHand);                   //ポーカーハンドカウント処理
+        Disp.showPKHandProb();                               //ポーカーハンド出現率表示
+    }
+
+    //**********************************
+    //カウンタクリアボタン押下処理
+    //**********************************
+    function btnClickCntClear() {
+        Disp.clearPKHandCnt();
+    }
+
+    //**********************************
+    //オンロード処理
+    //**********************************
+    function onloadFunc() {
+        //処理上インスタンス生成が必要なものを生成
+        new Disp(); new PokerHand(); new Card();
+        //ブラウザ情報取得
+        G_BROWZER = getBrowser();
+        //画面項目
+        Disp.enableChkCard(false);
+        //変数初期化
+        g_state = EN_STATE.INI;        //STATE
+        g_isBerserker = false;         //バーサーカーフラグ
+        g_arrAnimeTimer = new Array(); //timer配列
+        g_bgmNum = 0;                  //BGM番号
+        g_seNum = 0;                   //SE番号        
+        //ゲーム準備
+        g_player = new Player();       //プレイヤーインスタンス生成
+        //エフェクト
+        playBGM(G_EN_BGM.INI);         //BGMをかける
+    }
+
+    //テスト用
+    //※デバッグ用に残しておく
+    function test() {
+//        var d = new CardDeck(g_dispInfo.chkUseJoker); //カードデッキインスタンス生成
+//        var p = new Player(d);
+//        var cards_1 = new Array(new Card(0), new Card(9), new Card(10), new Card(11), new Card(12));  //ロイフラ
+//        var cards_2 = new Array(new Card(0), new Card(13), new Card(26), new Card(39), new Card(52)); //ファイブカード
+//        var cards_3 = new Array(new Card(0), new Card(1), new Card(2), new Card(3), new Card(4));     //ストレートフラッシュ
+//        var cards_4 = new Array(new Card(0), new Card(13), new Card(26), new Card(39), new Card(1));  //フォーカード
+//        var cards_5 = new Array(new Card(0), new Card(13), new Card(26), new Card(1), new Card(14));  //フルハウス
+//        var cards_6 = new Array(new Card(0), new Card(1), new Card(2), new Card(3), new Card(5));     //フラッシュ
+//        var cards_71 = new Array(new Card(0), new Card(9), new Card(10), new Card(11), new Card(25)); //ストレート(Ace)
+//        var cards_72 = new Array(new Card(2), new Card(3), new Card(4), new Card(5), new Card(19));   //ストレート
+//        var cards_8 = new Array(new Card(0), new Card(13), new Card(26), new Card(2), new Card(3));   //スリーカード
+//        var cards_9 = new Array(new Card(0), new Card(13), new Card(1), new Card(14), new Card(2));   ///ツーペア
+//        var cards_10 = new Array(new Card(0), new Card(13), new Card(5), new Card(20), new Card(26)); //ワンペア
+
+//        p.hand = cards_1;
+//        pkHand = new PokerHand(p.hand);             //ポーカーハンド情報生成
+//        var a = p.hand.getInfo();
+    }
+
+</script>
+<style type="text/css">
+    body
+    {
+        width: 700px;
+        margin: 0 auto;
+    }
+</style>
+</head>
+<body onload="onloadFunc();">
+ <input id="btnTest" type="button" value="テスト" onclick="test()" style="visibility:hidden"/>
+    <div>
+    </div>
+    <div>
+        <h1>クローズド・ポーカー</h1></div>
+    <div>
+    </div>
+    <div style="background-color:Green; border:2px solid red">
+        <table style="width:100%;">
+            <tr>
+                <td>
+                    <label for="chkCard0"><img alt="" src="img/s01.gif" id="imgCard0" width="100" /></label></td>
+                <td>
+                    <label for="chkCard1"><img alt="" src="img/s02.gif" id="imgCard1" width="100" /></label></td>
+                <td>
+                    <label for="chkCard2"><img alt="" src="img/s03.gif" id="imgCard2" width="100" /></label></td>
+                <td>
+                    <label for="chkCard3"><img alt="" src="img/s04.gif" id="imgCard3" width="100" /></label></td>
+                <td>
+                    <label for="chkCard4"><img alt="" src="img/s05.gif" id="imgCard4" width="100" /></label></td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold; color: #00FF00">
+                    <input id="chkCard0" type="checkbox" onclick="playSE(G_EN_SE.CARD_SEL);" /><label for="chkCard0">交換</label></td>
+                <td style="font-weight: bold; color: #00FF00">
+                    <input id="chkCard1" type="checkbox" onclick="playSE(G_EN_SE.CARD_SEL);"/><label for="chkCard1">交換</label></td>
+                <td style="font-weight: bold; color: #00FF00">
+                    <input id="chkCard2" type="checkbox" onclick="playSE(G_EN_SE.CARD_SEL);"/><label for="chkCard2">交換</label></td>
+                <td style="font-weight: bold; color: #00FF00">
+                    <input id="chkCard3" type="checkbox" onclick="playSE(G_EN_SE.CARD_SEL);"/><label for="chkCard3">交換</label></td>
+                <td style="font-weight: bold; color: #00FF00">
+                    <input id="chkCard4" type="checkbox" onclick="playSE(G_EN_SE.CARD_SEL);"/><label for="chkCard4">交換</label></td>
+            </tr>
+        </table>
+    </div>
+    <div align="center" style="height: 30px">
+        <div style="float:left; width:35%; height:auto; text-align:left; position:relative; top:55%;">
+        &nbsp;<input id="chkUseJoker" type="checkbox" onclick="playSE(G_EN_SE.CARD_SEL);"/><label for="chkUseJoker">ジョーカーを入れる</label>
+        </div>
+        <div style="float:left; width:65%; text-align:left; position:relative; top:45%;">
+        <input id="btnExchg" type="button" style="width:200px; height:30px;" value="開始" onclick="gameMain('btnExchg')" />
+        </div>
+    </div>
+    <div style="height: 40px"> 
+    <h2 id="PKHandStr">ここに役名が表示されます</h2>
+    </div>       
+        <div>
+            <table class="style2" id="tblCounter" width="700" border="1px" style="border-collapse:collapse;">
+                <tr>
+                    <td>
+                        &nbsp;</td>
+                    <td>
+                        ローヤル<br />
+                        ストレート<br />
+                        フラッシュ</td>
+                    <td>
+                        ファイブカード</td>
+                    <td>
+                        ストレート<br />
+                        フラッシュ</td>
+                    <td>
+                        フォーカード</td>
+                    <td>
+                        フルハウス</td>
+                    <td>
+                        フラッシュ</td>
+                </tr>
+                <tr>
+                    <td>
+                        出現回数</td>
+                    <td>
+                        <label id="PKHandCnt10">0</label></td>
+                    <td>
+                        <label id="PKHandCnt9">0</label></td>
+                    <td>
+                        <label id="PKHandCnt8">0</label></td>
+                    <td>
+                        <label id="PKHandCnt7">0</label></td>
+                    <td>
+                        <label id="PKHandCnt6">0</label></td>
+                    <td>
+                        <label id="PKHandCnt5">0</label></td>
+                </tr>
+                <tr>
+                    <td>
+                        出現確率</td>
+                    <td>
+                        <label id="PKHandProb10">-</label></td>
+                    <td>
+                        <label id="PKHandProb9">-</label></td>
+                    <td>
+                        <label id="PKHandProb8">-</label></td>
+                    <td>
+                        <label id="PKHandProb7">-</label></td>
+                    <td>
+                        <label id="PKHandProb6">-</label></td>
+                    <td>
+                        <label id="PKHandProb5">-</label></td>
+                </tr>
+                <tr>
+                    <td>
+                        </td>
+                    <td>
+                        ストレート</td>
+                    <td>
+                        スリーカード</td>
+                    <td>
+                        ツーペア</td>
+                    <td>
+                        ワンペア</td>
+                    <td>
+                        ノーペア</td>
+                    <td>
+                        <strong>総計</strong></td>
+                </tr>
+                <tr>
+                    <td>
+                        出現回数</td>
+                    <td>
+                        <label id="PKHandCnt4">0</label></td>
+                    <td>
+                        <label id="PKHandCnt3">0</label></td>
+                    <td>
+                        <label id="PKHandCnt2">0</label></td>
+                    <td>
+                        <label id="PKHandCnt1">0</label></td>
+                    <td>
+                        <label id="PKHandCnt0">0</label></td>
+                    <td>
+                        <label id="PKHandCntSum">0</label></td>
+                </tr>
+                <tr>
+                    <td>
+                        出現確率</td>
+                    <td>
+                        <label id="PKHandProb4">-</label></td>
+                    <td>
+                        <label id="PKHandProb3">-</label></td>
+                    <td>
+                        <label id="PKHandProb2">-</label></td>
+                    <td>
+                        <label id="PKHandProb1">-</label></td>
+                    <td>
+                        <label id="PKHandProb0">-</label></td>
+                    <td>
+                        &nbsp;</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="text-align:right;">
+            <input id="btnCntClear" type="button" value="カウンタクリア" onclick="btnClickCntClear()"/><br />
+            <br />
+        <input id="btnBerserker"  type="button" value="無限ドロー" onclick="gameMain('btnBerserker')"/>
+        </div>
+
+    
+ <div style="height: 50px"><address lang="en" >Copyright &copy; 2013 Kiyoshi. All Rights Reserved.</address>
+     <address lang="en" >&nbsp;</address></div>
+ <div>
+     <div>使用BGM、SE提供者様</div>
+     <div><a href="http://maoudamashii.jokersounds.com/" title="魔王魂"  target="_blank">魔王魂</a></div>
+     <div><a href="http://www.rengoku-teien.com/index.html" title="煉獄庭園"  target="_blank">煉獄庭園</a></div>
+     <div><a href="http://www.senses-circuit.com/material/se_game.html" title="フリー音楽素材 Senses Circuit"  target="_blank">フリー音楽素材 Senses Circuit</a></div>
+     <div><a href="http://www.01earth.net/sound" title="フリー音素材 01SoundEarth"  target="_blank">フリー音素材 01SoundEarth</a></div>
+     <div><a href="http://www.yen-soft.com/ssse/" title="On-Jin ～音人～＆E.EFFECT"  target="_blank">On-Jin ～音人～＆E.EFFECT</a></div>
+ </div>
+
+<div id="bgm" style="display:none"></div>
+<div id="sound0" style="display:none"></div>
+<div id="sound1" style="display:none"></div>
+<div id="sound2" style="display:none"></div>
+<div id="sound3" style="display:none"></div>
+<div id="sound4" style="display:none"></div>
+</body>
+</html>
